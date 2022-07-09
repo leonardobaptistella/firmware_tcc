@@ -7,45 +7,33 @@
 //--------------------------------------------------------------------------------------------
 
 #include <Arduino.h>
+#include <ACS712.h>
+#include <Project.h>
 
-
-// Project Macros
-//- output
-#define led_debug 2
-#define relay_bat1_pin X
-#define relay_bat2_pin X
-#define load_ctr_pin 25
-//- input
-#define v_load_pin 12
-#define v_bat_pin 13
-#define i_bat1_pin 36  
-#define i_bat2_pin 4
-//- adc config
-#define adc_resolution 12
-#define adc_reference 3.3
-
-// Function declaration
-double adc_calibration(float x);
-double measure_voltage (int pin);
-double measure_current(int pin);
-
-// Variable declaration
-double v_bateria = 0;
 
 void setup(){
+
   Serial.begin(9600);
-  pinMode(led_debug, OUTPUT);
+
+  // SET - Pinout config.
+  pinMode(2, OUTPUT);
+  pinMode(relay_bat1_pin, OUTPUT);
+  pinMode(relay_bat2_pin, OUTPUT);
+ 
 }
 
 void loop() {
   v_bateria = measure_voltage(v_load_pin);
-  Serial.println(v_bateria);
-  digitalWrite(led_debug, HIGH);
+  load_control(3, 1);
+  
+  digitalWrite(2, HIGH);
   sleep(1);
-  digitalWrite(led_debug, LOW);
+  digitalWrite(2, LOW);
   sleep(1);
 }
 
+
+//--------------- Function Body ------------------------
 double adc_calibration(float x){
   return   2.202196968876e+02
            +   3.561383996027e-01 * x
@@ -58,8 +46,8 @@ double adc_calibration(float x){
 }
 
 double measure_voltage (int pin){
-  // SET - Volt. divider cte; ADC resolution (V)
-  double r_cte = 0.5000000, adc_resol = 0.000805861;
+  // Volt. divider cte; ADC resolution (V) - set in macros
+  double r_cte = (r1_voltimeter/r2_voltimeter), adc_resol = (adc_v_ref/adc_resol);
   
   // SET - Periodo de amostragem (s); Nº de amostras
   double  period_amostra = 0.0002;
@@ -83,12 +71,12 @@ double measure_voltage (int pin){
   return v_in; 
 }
 
-double measure_current(int pin){
-  double v_sensor = 0, i_sensor = 0;
+void load_control(float load_current, int pin){
+  float v_adc = 0;
+  int adc_value = 0, adc_r = 0;
 
-  v_sensor = measure_voltage(pin);
+  v_adc = load_current / 2;
+  adc_value = map(v_adc,0,dac_v_ref,0,dac_res);
 
-
-
-  return i_sensor;
+  dacWrite(pin, adc_value); 
 }
