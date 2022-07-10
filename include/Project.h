@@ -2,8 +2,8 @@
 //- PIN MAP
 //- output -
 #define led_debug 2
-#define relay_bat1_pin 5
-#define relay_bat2_pin 6
+#define relay_bat1_pin 18
+#define relay_bat2_pin 19
 #define load_ctr_pin 25
 //- input -
 #define v_load_pin 12
@@ -33,7 +33,7 @@
 
 //--- VARIABLES ---
 double v_bateria = 0;
-int actual_state = 0; // 0 - repouso; 1 - Teste; 2 - Falta
+int actual_state = repouso; 
 int prev_state = 0;
 
 
@@ -41,6 +41,7 @@ int prev_state = 0;
 // - instrumentation -
 double adc_calibration(float x);
 double measure_voltage (int pin);
+double measure_current (int pin);
 
 // - actuation -
 void load_control(float load_current, int pin);
@@ -51,9 +52,10 @@ void send_data(float v_bat_teste, float v_bat_backup, float i_bat1, float i_bat2
 void receive_data();
 
 // - system operation -
+void system_init();
 void verifica_estado(int estado_atual, int bat_teste);
 void state_repouso();
-void state_falta();
+bool state_falta();
 bool state_teste(int bat_name, int v_eod, int load_current); //0 = test unfinished(falta; 1 = test finished
 
 

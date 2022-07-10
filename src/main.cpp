@@ -7,27 +7,27 @@
 //--------------------------------------------------------------------------------------------
 
 #include <Arduino.h>
-#include <ACS712.h>
 #include <Project.h>
 
-
 void setup(){
-  Serial.begin(9600);
-
-  // SET - Pinout config.
-  pinMode(2, OUTPUT); 
+  system_init(); 
 }
 
 void loop() {
-  v_bateria = measure_voltage(v_load_pin);
-  Serial.print("V bat. = ");
-  Serial.println(v_bateria);
-  //load_control(2, load_ctr_pin);
-  
-  digitalWrite(2, HIGH);
-  sleep(1);
-  digitalWrite(2, LOW);
-  sleep(1);
+  int action = 0, bat_name = 0;
+  float v_eod = 0, load_current = 0;
+
+  if(actual_state == falta){
+    state_falta();
+  }
+
+  receive_data();
+
+  if((actual_state == repouso)&&(action = teste)){
+    actual_state == teste;
+    state_teste(bat_name, v_eod, load_current);
+  }
+
 }
 
 
@@ -67,6 +67,10 @@ double measure_voltage(int pin){
   v_in = (adc_resol * analog_val_acc) /(r_cte);
   
   return v_in; 
+}
+
+double measure_current (int pin){
+  return 1.0;
 }
 
 // - Control -
@@ -119,18 +123,33 @@ void receive_data(){
 }
 
 //- System manage -
+void system_init(){
+  Serial.begin(9600);
+  pinMode(led_debug, OUTPUT);
+  pinMode(relay_bat1_pin, OUTPUT);
+  pinMode(relay_bat2_pin, OUTPUT);
+  digitalWrite(led_debug, LOW);
+  digitalWrite(relay_bat1_pin, LOW);
+  digitalWrite(relay_bat2_pin, LOW);
+  dacWrite(load_ctr_pin, 0); 
+}
+
 void verifica_estado(int estado_atual, int bat_teste){
-  
+  // apenas entra e sai do estado falta
+
+  // Estado atual repouso
   if(estado_atual == repouso){
+    
     float i_bat1 = 0, i_bat2 = 0;
-    i_bat1 = 1; //sensor corrente
-    i_bat2 = 1; //sensor corrente
+    i_bat1 = measure_current(i_bat1_pin); 
+    i_bat2 = measure_current(i_bat2_pin);
     
     if ((i_bat1 >= i_limit)||(i_bat2 >= i_limit)){
       actual_state = falta;
-    }    
+    } 
   }
 
+  // Estado atual teste
   if(estado_atual ==  teste){
     float i_bat = 0;
     int bat_backup = 0;
@@ -141,17 +160,38 @@ void verifica_estado(int estado_atual, int bat_teste){
       bat_backup = 1;
     }
     
-    i_bat = 1; //sensor corrente (bat_backup)
+    i_bat = measure_current(bat_backup); 
 
     if (i_bat >= i_limit){
       actual_state = falta;
     }
   }
+
+  // Estado atual falta
+  if(estado_atual == falta){
+    float i_bat1 = 0, i_bat2 = 0;
+    i_bat1 = measure_current(i_bat1_pin); 
+    i_bat2 = measure_current(i_bat2_pin);
+    
+    if ((i_bat1 <= i_limit)&&(i_bat2 <= i_limit)){
+      actual_state = repouso;
+    }    
+  }
 }
 
-void state_falta(){
+bool state_falta(){
+  float i_bat1 = 0, i_bat2 = 0, v_pack = 0;
+  
+  verifica_estado(actual_state, 0);
 
-
+  while (actual_state == falta){
+    i_bat1 = measure_current(i_bat1_pin); 
+    i_bat2 = measure_current(i_bat2_pin);
+    v_pack = measure_voltage(v_bat_pin);
+    send_data(0,v_pack, i_bat1, i_bat2);
+    verifica_estado(actual_state, 0);
+  }
+  return true;
 }
 
 bool state_teste(int bat_name, int v_eod, int load_current){
