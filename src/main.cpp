@@ -9,13 +9,16 @@
 #include <Arduino.h>
 #include <Project.h>
 
+int bat_name = 0, state = 0;
+float v_eod = 0, load_current = 0;
+
 void setup(){
   system_init(); 
 }
 
 void loop() {
-  int action = 0, bat_name = 0;
-  float v_eod = 0, load_current = 0;
+  // int bat_name = 0, state = 0;
+  // float v_eod = 0, load_current = 0;
 
   if(actual_state == falta){
     state_falta();
@@ -30,22 +33,28 @@ void loop() {
     v_eod_str = command.substring(4,9);
     load_c_str = command.substring(10,14);
     
-    int state = state_str.toInt();
-    int bat_name = bat_name_str.toInt();
-    float v_eod = v_eod_str.toFloat();
-    float load_c = load_c_str.toFloat();
+    state = state_str.toInt();
+    bat_name = bat_name_str.toInt();
+    v_eod = v_eod_str.toFloat();
+    load_current = load_c_str.toFloat();
 
     Serial.println(state);
     Serial.println(bat_name);
     Serial.println(v_eod);
-    Serial.println(load_c);
+    Serial.println(load_current);
 
   }
 
-  if((actual_state == repouso)&&(action == teste)){
+  if((actual_state == repouso)&&(state == teste)){
     actual_state == teste;
     state_teste(bat_name, v_eod, load_current);
   }
+
+  Serial.println(state);
+  Serial.println(bat_name);
+  Serial.println(v_eod);
+  Serial.println(load_current);
+  delay(500);
 
 }
 
