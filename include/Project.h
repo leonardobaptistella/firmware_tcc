@@ -22,6 +22,9 @@
 #define div_res_cte 0.5
 #define seg_coef 0.05
 #define i_limit 0.1
+// - Acs configg
+#define v_ref_acs 3.3
+#define acs_sensibility 0.0443
 
 //- GENERAL
 #define coupling 1
@@ -40,8 +43,8 @@ int prev_state = 0;
 //--- FUNCTIONS ---
 // - instrumentation -
 double adc_calibration(float x);
-double measure_voltage (int pin);
-double measure_current (int pin);
+double measure_voltage(int pin);
+double measure_current(int pin, float sensibility, float v_ref);
 
 // - actuation -
 void load_control(float load_current, int pin);
@@ -49,7 +52,7 @@ void relay_control(int bat_name, int action);
 
 // - Data manage
 void send_data(float v_bat_teste, float v_bat_backup, float i_bat1, float i_bat2);
-void receive_data();
+String receive_data();
 
 // - system operation -
 void system_init();

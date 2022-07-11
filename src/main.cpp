@@ -21,9 +21,28 @@ void loop() {
     state_falta();
   }
 
-  receive_data();
+  if (Serial.available()) { // if there is data comming
+    String state_str = "", bat_name_str = "", v_eod_str = "",load_c_str = "";
+    String command = Serial.readStringUntil('\n');
+    
+    state_str = command.substring(0,1);
+    bat_name_str = command.substring(2,3);
+    v_eod_str = command.substring(4,9);
+    load_c_str = command.substring(10,14);
+    
+    int state = state_str.toInt();
+    int bat_name = bat_name_str.toInt();
+    float v_eod = v_eod_str.toFloat();
+    float load_c = load_c_str.toFloat();
 
-  if((actual_state == repouso)&&(action = teste)){
+    Serial.println(state);
+    Serial.println(bat_name);
+    Serial.println(v_eod);
+    Serial.println(load_c);
+
+  }
+
+  if((actual_state == repouso)&&(action == teste)){
     actual_state == teste;
     state_teste(bat_name, v_eod, load_current);
   }
@@ -69,8 +88,12 @@ double measure_voltage(int pin){
   return v_in; 
 }
 
-double measure_current (int pin){
-  return 1.0;
+double measure_current(int pin, float sensibility, float v_ref){
+  double i_acs = 0, v_acs = 0;
+  v_acs = measure_voltage(pin);
+  i_acs = (v_acs - (v_ref * 0.5)) / sensibility;
+
+  return i_acs;
 }
 
 // - Control -
@@ -82,9 +105,6 @@ void load_control(float load_current, int pin){
   
   adc_value = v_adc/(dac_v_ref/(dac_res+1));
   adc_value = round(adc_value);
-
-  Serial.print("An. Value = ");
-  Serial.println(adc_value);
 
   dacWrite(pin, adc_value); 
 }
@@ -118,10 +138,6 @@ void send_data(float v_bat_teste, float v_bat_backup, float i_bat1, float i_bat2
   Serial.println(i_bat2);
 }
 
-void receive_data(){
-
-}
-
 //- System manage -
 void system_init(){
   Serial.begin(9600);
@@ -141,8 +157,8 @@ void verifica_estado(int estado_atual, int bat_teste){
   if(estado_atual == repouso){
     
     float i_bat1 = 0, i_bat2 = 0;
-    i_bat1 = measure_current(i_bat1_pin); 
-    i_bat2 = measure_current(i_bat2_pin);
+    i_bat1 = measure_current(i_bat1_pin, acs_sensibility, v_ref_acs); 
+    i_bat2 = measure_current(i_bat2_pin, acs_sensibility, v_ref_acs);
     
     if ((i_bat1 >= i_limit)||(i_bat2 >= i_limit)){
       actual_state = falta;
@@ -160,7 +176,7 @@ void verifica_estado(int estado_atual, int bat_teste){
       bat_backup = 1;
     }
     
-    i_bat = measure_current(bat_backup); 
+    i_bat = measure_current(bat_backup,acs_sensibility, v_ref_acs); 
 
     if (i_bat >= i_limit){
       actual_state = falta;
@@ -170,8 +186,8 @@ void verifica_estado(int estado_atual, int bat_teste){
   // Estado atual falta
   if(estado_atual == falta){
     float i_bat1 = 0, i_bat2 = 0;
-    i_bat1 = measure_current(i_bat1_pin); 
-    i_bat2 = measure_current(i_bat2_pin);
+    i_bat1 = measure_current(i_bat1_pin,acs_sensibility, v_ref_acs); 
+    i_bat2 = measure_current(i_bat2_pin,acs_sensibility, v_ref_acs);
     
     if ((i_bat1 <= i_limit)&&(i_bat2 <= i_limit)){
       actual_state = repouso;
@@ -185,8 +201,8 @@ bool state_falta(){
   verifica_estado(actual_state, 0);
 
   while (actual_state == falta){
-    i_bat1 = measure_current(i_bat1_pin); 
-    i_bat2 = measure_current(i_bat2_pin);
+    i_bat1 = measure_current(i_bat1_pin,acs_sensibility, v_ref_acs); 
+    i_bat2 = measure_current(i_bat2_pin,acs_sensibility, v_ref_acs);
     v_pack = measure_voltage(v_bat_pin);
     send_data(0,v_pack, i_bat1, i_bat2);
     verifica_estado(actual_state, 0);
