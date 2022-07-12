@@ -37,12 +37,6 @@ void loop() {
     bat_name = bat_name_str.toInt();
     v_eod = v_eod_str.toFloat();
     load_current = load_c_str.toFloat();
-
-    Serial.println(state);
-    Serial.println(bat_name);
-    Serial.println(v_eod);
-    Serial.println(load_current);
-
   }
 
   if((actual_state == repouso)&&(state == teste)){
@@ -50,10 +44,8 @@ void loop() {
     state_teste(bat_name, v_eod, load_current);
   }
 
-  Serial.println(state);
-  Serial.println(bat_name);
-  Serial.println(v_eod);
-  Serial.println(load_current);
+  send_data(12.00, 12.32, 2.52, 1.02);
+  
   delay(500);
 
 }
@@ -221,7 +213,7 @@ bool state_falta(){
 
 bool state_teste(int bat_name, int v_eod, int load_current){
   float v_bat_teste = 0, v_bat_backup = 0, i_bat1 = 0, i_bat2 = 0;
-  int bat_pin = 0;
+  //int bat_pin = 0;
   
   // Verificação de seurança (não atingir totalmente o EoD)
   v_eod = v_eod + (v_eod*seg_coef);
@@ -238,8 +230,8 @@ bool state_teste(int bat_name, int v_eod, int load_current){
     prev_state = actual_state;
     v_bat_teste = measure_voltage(v_load_pin);
     v_bat_backup = measure_voltage(v_bat_pin);
-    i_bat1 = 0; //func do acs
-    i_bat2 = 0;
+    i_bat1 = measure_current(i_bat1_pin,acs_sensibility, v_ref_acs); //func do acs
+    i_bat2 = measure_current(i_bat2_pin,acs_sensibility, v_ref_acs);
     send_data(v_bat_teste, v_bat_backup, i_bat1, i_bat2);    
     delay(1);
   }
@@ -253,4 +245,5 @@ bool state_teste(int bat_name, int v_eod, int load_current){
     actual_state = repouso;
     return true;
   }
+  send_data(0, 0, 0, 0);
 }
